@@ -1,9 +1,41 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Minecraft Control{% endblock %}
 
 {% block content %}
-<body>
-	
-</body>
+<main class="page">
+    <section class="card">
+        <header class="card-header">
+            <div>
+                <h1>Minecraft Server</h1>
+                <p>Start the server remotely.</p>
+            </div>
+        </header>
+
+        <div class="status-box">
+            <span class="status-dot offline"></span>
+            <span>Server status: offline</span>
+        </div>
+
+        <form class="control-form" hx-post="/start" hx-target="#message" hx-swap="innerHTML">
+            <label for="secret">Secret</label>
+
+            <input
+                id="secret"
+                name="secret"
+                type="password"
+                placeholder="Enter server secret"
+                required
+            />
+
+            <button type="submit">
+                Start Server
+            </button>
+        </form>
+
+        <div id="message" class="message">
+            
+        </div>
+    </section>
+</main>
 {% endblock %}

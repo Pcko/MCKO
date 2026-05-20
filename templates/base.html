@@ -1,11 +1,12 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <link href="/assets/app.css" rel="stylesheet" />
-        <link href="https://rsms.me/inter/inter.css" rel="stylesheet" />
-        <!-- Allow any inheriting page to set it's own title -->
-        <title>{% block title %}{{ title }}{% endblock %}</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        <link href="/assets/app.css" rel="stylesheet" />
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <title>{% block title %}{{ title }}{% endblock %}</title>
         <!-- Allow any inheriting page to extend head with additional assets -->
         {% block head %}{% endblock %}
     </head>
