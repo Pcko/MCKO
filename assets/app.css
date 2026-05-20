@@ -137,6 +137,17 @@ button {
     cursor: pointer;
 }
 
+.danger-button {
+    margin-top: 0.5rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--base08);
+    background: var(--base08);
+    color: var(--base00);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
 button:hover {
     background: var(--base0A);
     border-color: var(--base0A);

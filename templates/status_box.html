@@ -1,0 +1,15 @@
+<div
+    id="status-box"
+    class="status-box"
+    hx-get="/status"
+    hx-trigger="every 5s"
+    hx-swap="outerHTML"
+>
+    {% if running %}
+        <span class="status-dot online"></span>
+        <span>Server status: online</span>
+    {% else %}
+        <span class="status-dot offline"></span>
+        <span>Server status: offline</span>
+    {% endif %}
+</div>

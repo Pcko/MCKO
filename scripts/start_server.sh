@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set +x
 
 if [ -z "$MC_SERVER_DIR" ]; then
     echo "MC_SERVER_DIR is not set"

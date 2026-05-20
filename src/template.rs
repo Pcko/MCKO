@@ -3,9 +3,17 @@ use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response}; 
 
 #[derive(Template)] 
-#[template(path = "../templates/index.html")] 
-pub struct DashboardTemplate;
+#[template(path = "index.html")] 
+pub struct DashboardTemplate {
+    pub running: bool,
+}
 
+
+#[derive(Template)]
+#[template(path = "status_box.html")]
+pub struct StatusBoxTemplate {
+    pub running: bool,
+}
 
 pub struct HtmlTemplate<T>(pub T); 
 

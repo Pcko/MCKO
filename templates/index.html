@@ -12,24 +12,25 @@
             </div>
         </header>
 
-        <div class="status-box">
-            <span class="status-dot offline"></span>
-            <span>Server status: offline</span>
-        </div>
+        {% include "status_box.html" %}
 
-        <form class="control-form" hx-post="/start" hx-target="#message" hx-swap="innerHTML">
-            <label for="secret">Secret</label>
+        <label for="secret">Secret</label>
+        <input
+            id="secret"
+            name="secret"
+            type="password"
+            placeholder="Enter server secret"
+            required
+        />
 
-            <input
-                id="secret"
-                name="secret"
-                type="password"
-                placeholder="Enter server secret"
-                required
-            />
-
+        <form class="control-form" hx-include="#secret" hx-post="/start" hx-target="#message" hx-swap="innerHTML">
             <button type="submit">
                 Start Server
+            </button>
+        </form>
+        <form class="control-form" hx-include="#secret" hx-post="/stop" hx-target="#message" hx-swap="innerHTML"> 
+            <button type="submit" class="danger-button">
+                Stop Server
             </button>
         </form>
 
