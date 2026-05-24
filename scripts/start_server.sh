@@ -9,4 +9,4 @@ fi
 
 cd "$MC_SERVER_DIR"
 
-java -Xms2G -Xmx6G -jar server.jar nogui
+java -Xms2G -Xmx6G -jar server.jar nogui > server.log 2>&1
