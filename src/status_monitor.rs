@@ -23,7 +23,7 @@ pub fn spawn_status_monitor(state : AppState){
 }
 
 async fn is_server_running(port: &str) -> bool {
-    let addr  : SocketAddr = match format!("127.0.0.1:{port}").parse() {
+    let addr  : SocketAddr = match format!("0.0.0.0:{port}").parse() {
         Ok(addr) => addr,
         Err(err) => {
             error!("Invalid Minecraft server address: {err}");
