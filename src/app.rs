@@ -79,7 +79,7 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
         );
     }
 
-    if *&state.server_state.lock().unwrap().eq(&ServerState::Running) {
+    if *state.server_state.lock().unwrap() == ServerState::Running {
         info!("MC Server already running...");
         return (
             StatusCode::OK,
@@ -131,7 +131,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
         );
     }
 
-    if *&state.server_state.lock().unwrap().eq(&ServerState::Offline) {
+    if *state.server_state.lock().unwrap() == ServerState::Offline {
         info!("MC Server is not running...");
         return (
             StatusCode::OK,

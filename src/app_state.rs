@@ -8,7 +8,7 @@ pub struct AppState {
 }
 
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy,)]
 pub enum ServerState {
    Running, Starting, Offline, Stopping, Error
 }
