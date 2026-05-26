@@ -1,17 +1,19 @@
 use askama::Template; 
 use axum::http::StatusCode;
-use axum::response::{Html, IntoResponse, Response}; 
+use axum::response::{Html, IntoResponse, Response};
+
+use crate::app_state::ServerState; 
 
 #[derive(Template)] 
 #[template(path = "index.html")] 
 pub struct DashboardTemplate {
-    pub running: bool,
+    pub state: ServerState,
 }
 
 #[derive(Template)]
 #[template(path = "status_box.html")]
 pub struct StatusBoxTemplate {
-    pub running: bool,
+    pub state: ServerState,
 }
 
 pub struct HtmlTemplate<T>(pub T); 

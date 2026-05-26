@@ -1,5 +1,5 @@
 use crate::app_config::AppConfig;
-use crate::app_state::AppState;
+use crate::app_state::{AppState, ServerState};
 use crate::script_util::run_script;
 use crate::status_monitor::spawn_status_monitor;
 use crate::template::{DashboardTemplate, HtmlTemplate, StatusBoxTemplate};
@@ -14,8 +14,7 @@ use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
 use std::env;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use tracing::{Level, error, info};
 use argon2::{PasswordVerifier};
 
@@ -32,12 +31,12 @@ pub fn app(app_config: &AppConfig) -> Router {
     // status monitor
     let app_state = AppState {
             config: Arc::new(app_config.clone()),
-            server_running: Arc::new(AtomicBool::new(false))
+            server_state: Arc::new(Mutex::new(ServerState::Offline))
     };
     spawn_status_monitor(app_state.clone());
     
     let governor_conf = GovernorConfigBuilder::default()
-        .per_second(300)
+        .per_second(12)
         .burst_size(5)
         .finish()
         .unwrap();
@@ -46,7 +45,13 @@ pub fn app(app_config: &AppConfig) -> Router {
     let limited_router = Router::new()
         .route("/start", post(start))
         .route("/stop", post(stop))
-        .layer(tower_governor::GovernorLayer::new(governor_conf));
+        .layer(tower_governor::GovernorLayer::new(governor_conf))
+        .layer(
+            TraceLayer::new_for_http()
+            .make_span_with(DefaultMakeSpan::new().include_headers(false))
+            .on_response(DefaultOnResponse::new().level(Level::INFO))
+            .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
+        );
 
     Router::new()
         .route("/", get(dashboard))
@@ -56,18 +61,12 @@ pub fn app(app_config: &AppConfig) -> Router {
             "/assets",
             ServeDir::new(format!("{}/assets", assets_path.to_str().unwrap())),
         )
-        .layer(
-            TraceLayer::new_for_http()
-            .make_span_with(DefaultMakeSpan::new().include_headers(false))
-            .on_response(DefaultOnResponse::new().level(Level::INFO))
-            .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
-        )
         .with_state(app_state)
 }
 
 async fn dashboard(State(state): State<AppState>) -> impl IntoResponse {
     HtmlTemplate(DashboardTemplate {
-        running: state.server_running.load(Ordering::Relaxed),
+        state: *state.server_state.lock().unwrap(),
     })
 }
 
@@ -80,7 +79,7 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
         );
     }
 
-    if state.server_running.load(Ordering::Relaxed) {
+    if *&state.server_state.lock().unwrap().eq(&ServerState::Running) {
         info!("MC Server already running...");
         return (
             StatusCode::OK,
@@ -94,6 +93,9 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
     match run_script(script_path.as_path()).await {
         Ok(_) => {
             info!("MC server start command spawned");
+            
+            let mut guard: std::sync::MutexGuard<'_, ServerState> = state.server_state.lock().unwrap();
+            *guard = ServerState::Starting;
 
             (
                 StatusCode::OK,
@@ -115,7 +117,7 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
 
 async fn status(State(state): State<AppState>) -> impl IntoResponse {
     HtmlTemplate(StatusBoxTemplate {
-        running: state.server_running.load(Ordering::Relaxed),
+        state: *state.server_state.lock().unwrap()
     })
 }
 
@@ -129,7 +131,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
         );
     }
 
-    if !state.server_running.load(Ordering::Relaxed) {
+    if *&state.server_state.lock().unwrap().eq(&ServerState::Offline) {
         info!("MC Server is not running...");
         return (
             StatusCode::OK,
@@ -143,6 +145,9 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
     match run_script(script_path.as_path()).await {
         Ok(_) => {
             info!("MC server stop command spawned");
+
+            let mut guard  = state.server_state.lock().unwrap();
+            *guard = ServerState::Stopping;
 
             (
                 StatusCode::OK,

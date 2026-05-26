@@ -4,6 +4,7 @@ authors = ["Pcko"]
 description="Small Webservice to start a Minecraft server from remote." 
 version = "0.1.0"
 edition = "2024"
+default-run = "mcko"
 
 [dependencies]
 askama = "0.16.0"

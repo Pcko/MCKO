@@ -5,11 +5,6 @@
     hx-trigger="every 5s"
     hx-swap="outerHTML"
 >
-    {% if running %}
-        <span class="status-dot online"></span>
-        <span>Server status: online</span>
-    {% else %}
-        <span class="status-dot offline"></span>
-        <span>Server status: offline</span>
-    {% endif %}
+    <span class="status-dot {{ state.css_class() }}"></span>
+    <span>Server status: {{ state.label() }}</span>
 </div>

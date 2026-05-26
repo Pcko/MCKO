@@ -1,10 +1,10 @@
-use std::{sync::atomic::Ordering, time::Duration};
+use std::{time::Duration};
 use std::net::SocketAddr;
 
 use tokio::net::{TcpStream};
 use tracing::error;
 
-use crate::app_state::AppState;
+use crate::app_state::{AppState, ServerState};
 
 pub fn spawn_status_monitor(state : AppState){
     tokio::spawn(async move {
@@ -14,16 +14,25 @@ pub fn spawn_status_monitor(state : AppState){
             interval.tick().await;
 
             let running = is_server_running(&state.config.mc_port).await;
+            let current_state;
+        
+            if running {
+                current_state= ServerState::Running;
+            }else {
+                // could be a problem that while starting or stopping it will now always display offline
+                current_state= ServerState::Offline;
+            }
 
-            state
-                .server_running
-                .store(running, Ordering::Relaxed);
+            let mut server_state= state.server_state.lock().unwrap();
+            if *&server_state.eq(&current_state)  {
+                *server_state = current_state;
+            }
         }
     });
 }
 
 async fn is_server_running(port: &str) -> bool {
-    let addr  : SocketAddr = match format!("0.0.0.0:{port}").parse() {
+    let addr  : SocketAddr = match format!("127.0.0.1:{port}").parse() {
         Ok(addr) => addr,
         Err(err) => {
             error!("Invalid Minecraft server address: {err}");

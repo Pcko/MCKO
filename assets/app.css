@@ -98,6 +98,18 @@ p {
     background: var(--base0B);
 }
 
+.status-dot.starting {
+    background: var(--base0A);
+}
+
+.status-dot.stopping {
+    background: var(--base09);
+}
+
+.status-dot.error {
+    background: var(--base08);
+}
+
 .control-form {
     display: grid;
     gap: 0.75rem;

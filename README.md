@@ -7,7 +7,7 @@ MCKO is a small Rust web application for controlling a personal Minecraft server
 ## Features
 
 - Web interface for controlling a specific Minecraft server
-- Start, stop, and restart controls
+- Start and stop controls
 - Simple private-network dashboard
 - Configurable server directory and startup script
 - Environment-based configuration
@@ -23,9 +23,9 @@ MCKO is a small Rust web application for controlling a personal Minecraft server
 
 - Rust toolchain installed on the host machine
 - Java installed on the host machine 
-- tmux instlled on the host machine
 - A Minecraft server folder and jar
 - A server startup script, such as `start_server.sh` and stop script such as `stop_server.sh` (or use default ones in `./scripts`)
+- The included example scripts use tmux. You can replace them with scripts for Docker, systemd, PowerShell, batch files, or another server setup
 
 ## Installation
 
@@ -40,14 +40,14 @@ Create a `.env` file in the project root:
 Example:
 ```env
 SERVER_PORT=3000
-SECRET='your-secret-here'
+SECRET_HASH='your-secret-here'
 
 MC_SERVER_DIR=C:\MinecraftServer
 MC_SERVER_JAR=my_server.jar
 
 MC_JAVA_ARGS=-Xms2G -Xmx6G
-MC_START_SCRIPT=start_server.sh
-MC_STOP_SCRIPT=stop_server.sh
+MC_START_SCRIPT=./scripts/start_server.sh
+MC_STOP_SCRIPT=./scripts/stop_server.sh
 ```
 
 Scripts can be `.bat`,`.sh` or `.cmd`
