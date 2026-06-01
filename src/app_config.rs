@@ -2,6 +2,7 @@ use dotenv::dotenv;
 
 #[derive(Clone)]
 pub struct AppConfig {
+    pub server_host: String,
     pub server_port: String,
     pub secret_hash: String,
     pub mc_host : String, 
@@ -16,8 +17,9 @@ impl AppConfig {
         dotenv().ok();
         
         AppConfig {
-            secret_hash: dotenv::var("SECRET_HASH").expect("SECRET must be set"),
+            server_host: dotenv::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
             server_port: dotenv::var("SERVER_PORT").unwrap_or_else(|_| "3000".to_string()),
+            secret_hash: dotenv::var("SECRET_HASH").expect("SECRET must be set"),
             mc_host: dotenv::var("MC_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
             mc_port: dotenv::var("MC_PORT").unwrap_or_else(|_| "25565".to_string()),
             mc_server_dir: dotenv::var("MC_SERVER_DIR").expect("MC_SERVER_DIR must be set"),

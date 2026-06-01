@@ -26,8 +26,9 @@ async fn main() {
     let app_config = AppConfig::new();
     let app = app(&app_config);
     // configure server
+    let host = app_config.server_host;
     let port = app_config.server_port;
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}"))
+    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}"))
         .await
         .unwrap();
 

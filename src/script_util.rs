@@ -1,7 +1,7 @@
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::{Command, ExitStatus, Stdio};
 
-pub async fn run_script(script_path: &Path) -> Result<(), std::io::Error> {
+pub async fn run_script(script_path: &Path) -> Result<ExitStatus, std::io::Error> {
     let extension = script_path
         .extension()
         .and_then(|ext| ext.to_str())
@@ -47,8 +47,6 @@ pub async fn run_script(script_path: &Path) -> Result<(), std::io::Error> {
     let mut child = command.spawn()?;
 
     tokio::task::spawn_blocking(move || {
-        let _ = child.wait();
-    });
-
-    Ok(())
+        child.wait()
+    }).await?
 }

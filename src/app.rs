@@ -75,7 +75,7 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
         return (
             StatusCode::FORBIDDEN,
             [(header::CACHE_CONTROL, "no-store")],
-            r#"<div class="error">Invalid secret.</div>"#,
+            r#"<div class="error">Message: Invalid secret.</div>"#,
         );
     }
 
@@ -84,24 +84,34 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
         return (
             StatusCode::OK,
             [(header::CACHE_CONTROL, "no-store")],
-            r#"<div class="success">Server is already running.</div>"#,
+            r#"<div class="error">Message: Server is already running.</div>"#,
         );
     }
 
     let script_path: PathBuf = PathBuf::from(&state.config.mc_start_script);
 
     match run_script(script_path.as_path()).await {
-        Ok(_) => {
-            info!("MC server start command spawned");
-            
+        Ok(exit_status) => {
             let mut guard: std::sync::MutexGuard<'_, ServerState> = state.server_state.lock().unwrap();
-            *guard = ServerState::Starting;
 
-            (
-                StatusCode::OK,
-                [(header::CACHE_CONTROL, "no-store")],
-                r#"<div class="success">Server start requested.</div>"#,
-            )
+            if exit_status.success() {
+                info!("MC server start command spawned");
+                *guard = ServerState::Starting;
+
+                (
+                    StatusCode::OK,
+                    [(header::CACHE_CONTROL, "no-store")],
+                    r#"<div class="success">Message: Server start requested.</div>"#,
+                )
+            }else{
+                error!("Command panicked while running!");
+              
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    [(header::CACHE_CONTROL, "no-store")],
+                    r#"<div class="error">Message: Failed to start server.</div>"#,
+                )
+            }
         }
         Err(err) => {
             error!("Failed to execute command: {err}");
@@ -109,7 +119,7 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 [(header::CACHE_CONTROL, "no-store")],
-                r#"<div class="error">Failed to start server.</div>"#,
+                r#"<div class="error">Message: Failed to start server.</div>"#,
             )
         }
     }
@@ -127,7 +137,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
         return (
             StatusCode::FORBIDDEN,
             [(header::CACHE_CONTROL, "no-store")],
-            r#"<div class="error">Invalid secret.</div>"#,
+            r#"<div class="error">Message: Invalid secret.</div>"#,
         );
     }
 
@@ -136,7 +146,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
         return (
             StatusCode::OK,
             [(header::CACHE_CONTROL, "no-store")],
-            r#"<div class="success">Server is not running.</div>"#,
+            r#"<div class="success">Message: Server is not running.</div>"#,
         );
     }
     
@@ -152,7 +162,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
             (
                 StatusCode::OK,
                 [(header::CACHE_CONTROL, "no-store")],
-                r#"<div class="success">Server stop requested.</div>"#,
+                r#"<div class="success">Message: Server stop requested.</div>"#,
             )
         }
         Err(err) => {
@@ -161,7 +171,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 [(header::CACHE_CONTROL, "no-store")],
-                r#"<div class="error">Failed to stop server.</div>"#,
+                r#"<div class="error">Message: Failed to stop server.</div>"#,
             )
         }
     }
