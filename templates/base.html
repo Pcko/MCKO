@@ -1,20 +1,24 @@
 <!doctype html>
 <html lang="en">
+
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        
-        <link href="/assets/app.css" rel="stylesheet" />
+
+        <link rel="stylesheet" href="/assets/app.css">
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <script src="https://cdn.jsdelivr.net/npm/htmx-ext-response-targets@2.0.4"></script>
         <title>{% block title %}MCKO{% endblock %}</title>
         <link rel="icon" type="image/x-icon" href="/assets/minecraft_icon.png">
         <!-- Allow any inheriting page to extend head with additional assets -->
         {% block head %}{% endblock %}
     </head>
-    <body>
+
+    <body hx-ext="response-targets">
         <div id="content">
             <!-- Inheriting pages will have their content rendered here, similar to app root in React, Angular, etc. -->
             {% block content %}{% endblock %}
         </div>
     </body>
+
 </html>

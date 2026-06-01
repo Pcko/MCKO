@@ -1,10 +1,34 @@
-<div
-    id="status-box"
-    class="status-box"
-    hx-get="/status"
-    hx-trigger="every 5s"
-    hx-swap="outerHTML"
->
-    <span class="status-dot {{ state.css_class() }}"></span>
-    <span>Server status: {{ state.label() }}</span>
+<div id="status-box" class="status-box" hx-get="/status" hx-trigger="every 5s" hx-swap="outerHTML" aria-live="polite">
+    <div class="status-box__main">
+        <label>Status:</label>
+
+        <span class="status-dot {{ state.css_class() }}"></span>
+
+        <div class="status-content">
+            <span class="status-text">{{ state.label() }}</span>
+            <p>World online · accepting players</p>
+        </div>
+    </div>
+
+    <div class="status-box__aside status-meta">
+        <div class="small-card">
+            <span>Uptime</span>
+            <strong>1h 12m</strong>
+        </div>
+
+        <div class="small-card">
+            <span>Port</span>
+            <strong>25565</strong>
+        </div>
+
+        <div class="small-card">
+            <span>Mods</span>
+            <strong>122</strong>
+        </div>
+
+        <div class="small-card">
+            <span>RAM</span>
+            <strong>4.3 / 12 GB</strong>
+        </div>
+    </div>
 </div>

@@ -1,41 +1,86 @@
 {% extends "base.html" %}
 
 {% block title %}Minecraft Control{% endblock %}
+{% block head %}
+<script>
+    function draggable(handleId, targetId) {
+        const handle = document.getElementById(handleId);
+        const target = document.getElementById(targetId);
 
+        if (!handle || !target) return;
+
+        let dragging = false;
+        let previousX = 0;
+        let previousY = 0;
+
+        handle.addEventListener("pointerdown", (event) => {
+            dragging = true;
+            previousX = event.pageX;
+            previousY = event.pageY;
+            handle.setPointerCapture(event.pointerId);
+        });
+
+        handle.addEventListener("pointermove", (event) => {
+            if (!dragging) return;
+
+            const dx = event.pageX - previousX;
+            const dy = event.pageY - previousY;
+
+            const currentLeft = parseInt(target.style.left || "0", 10);
+            const currentTop = parseInt(target.style.top || "0", 10);
+
+            target.style.left = `${currentLeft + dx}px`;
+            target.style.top = `${currentTop + dy}px`;
+
+            previousX = event.pageX;
+            previousY = event.pageY;
+        });
+
+        handle.addEventListener("pointerup", () => {
+            dragging = false;
+        });
+    }
+
+    window.addEventListener("load", () => {
+        draggable("term", "term");
+    });
+</script>
+{% endblock %}
 {% block content %}
 <main class="page">
-    <section class="card">
+    <section id="term" class="card" data-title-left="mcko@mc-server: ~/management" data-title-right="v0.1">
+
         <header class="card-header">
-            <div>
-                <h1>Minecraft Server</h1>
-                <p>Start the server remotely.</p>
-            </div>
+            <h1>Minecraft Server Management</h1>
         </header>
 
         {% include "status_box.html" %}
 
-        <label for="secret">Secret</label>
-        <input
-            id="secret"
-            name="secret"
-            type="password"
-            placeholder="Enter server secret"
-            required
-        />
+        <div class="panel">
+            <label for="secret">Server Secret:</label>
+            <input id="secret" name="secret" type="password" placeholder="Enter server secret" required />
+        </div>
 
-        <form class="control-form" hx-include="#secret" hx-post="/start" hx-target="#message" hx-swap="innerHTML">
-            <button type="submit">
+        <div class="server-actions">
+            <button type="button" class="success-button" hx-include="#secret" hx-post="/start" hx-target="#message"
+                hx-target-error="#message" hx-swap="innerHTML">
                 Start Server
             </button>
-        </form>
-        <form class="control-form" hx-include="#secret" hx-post="/stop" hx-target="#message" hx-swap="innerHTML"> 
-            <button type="submit" class="danger-button">
+
+            <button type="button" hx-include="#secret" hx-post="/restart" hx-target="#message"
+                hx-target-error="#message" hx-swap="innerHTML" disabled>
+                Restart Server
+            </button>
+
+            <button type="button" class="danger-button" hx-include="#secret" hx-post="/stop" hx-target="#message"
+                hx-target-error="#message" hx-swap="innerHTML">
                 Stop Server
             </button>
-        </form>
+        </div>
+
 
         <div id="message" class="message">
-            
+
         </div>
     </section>
 </main>
