@@ -6,19 +6,23 @@
 
         <div class="status-content">
             <span class="status-text">{{ state.label() }}</span>
+            {% if state.label() == "Running" %}
             <p>World online · accepting players</p>
+            {% else %}
+            <p>World offline · run to play</p>
+            {% endif %}
         </div>
     </div>
 
     <div class="status-box__aside status-meta">
         <div class="small-card">
             <span>Uptime</span>
-            <strong>1h 12m</strong>
+            <strong>{{ uptime }}</strong>
         </div>
 
         <div class="small-card">
             <span>Port</span>
-            <strong>25565</strong>
+            <strong>{{ port }}</strong>
         </div>
 
         <div class="small-card">

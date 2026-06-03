@@ -1,7 +1,6 @@
 pub mod app;
 pub mod app_config;
-pub mod app_state;
-pub mod template;
+pub mod model;
 pub mod script_util;
 pub mod status_monitor;
 
@@ -33,5 +32,10 @@ async fn main() {
         .unwrap();
 
     info!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }

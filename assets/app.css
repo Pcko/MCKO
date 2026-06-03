@@ -332,3 +332,8 @@ button:disabled {
   left: 0;
   top: 0;
 }
+
+#term::before {
+    cursor: move;
+    user-select: none;
+}

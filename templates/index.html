@@ -3,31 +3,46 @@
 {% block title %}Minecraft Control{% endblock %}
 {% block head %}
 <script>
-    function draggable(handleId, targetId) {
-        const handle = document.getElementById(handleId);
+    function draggableTitlebar(targetId) {
         const target = document.getElementById(targetId);
-
-        if (!handle || !target) return;
+        if (!target) return;
 
         let dragging = false;
         let previousX = 0;
         let previousY = 0;
 
-        handle.addEventListener("pointerdown", (event) => {
+        target.addEventListener("pointerdown", (event) => {
+            const rect = target.getBoundingClientRect();
+
+            const titlebarHeight = parseFloat(
+                getComputedStyle(document.documentElement)
+                    .getPropertyValue("--titlebar-height")
+            ) || 40;
+
+            const clickedInsideTitlebar =
+                event.clientY >= rect.top &&
+                event.clientY <= rect.top + titlebarHeight;
+
+            if (!clickedInsideTitlebar) {
+                return;
+            }
+
             dragging = true;
             previousX = event.pageX;
             previousY = event.pageY;
-            handle.setPointerCapture(event.pointerId);
+
+            target.setPointerCapture(event.pointerId);
+            event.preventDefault();
         });
 
-        handle.addEventListener("pointermove", (event) => {
+        target.addEventListener("pointermove", (event) => {
             if (!dragging) return;
 
             const dx = event.pageX - previousX;
             const dy = event.pageY - previousY;
 
-            const currentLeft = parseInt(target.style.left || "0", 10);
-            const currentTop = parseInt(target.style.top || "0", 10);
+            const currentLeft = parseFloat(target.style.left || "0");
+            const currentTop = parseFloat(target.style.top || "0");
 
             target.style.left = `${currentLeft + dx}px`;
             target.style.top = `${currentTop + dy}px`;
@@ -36,13 +51,17 @@
             previousY = event.pageY;
         });
 
-        handle.addEventListener("pointerup", () => {
+        target.addEventListener("pointerup", () => {
+            dragging = false;
+        });
+
+        target.addEventListener("pointercancel", () => {
             dragging = false;
         });
     }
 
     window.addEventListener("load", () => {
-        draggable("term", "term");
+        draggableTitlebar("term");
     });
 </script>
 {% endblock %}

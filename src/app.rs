@@ -1,22 +1,24 @@
 use crate::app_config::AppConfig;
-use crate::app_state::{AppState, ServerState};
+use crate::model::server_state::ServerState;
+use crate::model::app_state::{AppState};
+use crate::model::template::{DashboardTemplate, HtmlTemplate, StatusBoxTemplate};
 use crate::script_util::run_script;
 use crate::status_monitor::spawn_status_monitor;
-use crate::template::{DashboardTemplate, HtmlTemplate, StatusBoxTemplate};
+use argon2::PasswordVerifier;
 use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Form, Router};
 use serde::Deserialize;
+use std::env;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex, RwLock};
+use std::time::Instant;
 use tower_governor::governor::GovernorConfigBuilder;
 use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnResponse, TraceLayer};
-use std::env;
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use tracing::{Level, error, info};
-use argon2::{PasswordVerifier};
 
 #[derive(Deserialize)]
 struct FormData {
@@ -30,11 +32,12 @@ pub fn app(app_config: &AppConfig) -> Router {
 
     // status monitor
     let app_state = AppState {
-            config: Arc::new(app_config.clone()),
-            server_state: Arc::new(Mutex::new(ServerState::Offline))
+        config: Arc::new(app_config.clone()),
+        server_state: Arc::new(Mutex::new(ServerState::Offline)),
+        started_at: Arc::new(RwLock::new(None)),
     };
     spawn_status_monitor(app_state.clone());
-    
+
     let governor_conf = GovernorConfigBuilder::default()
         .per_second(12)
         .burst_size(5)
@@ -48,9 +51,9 @@ pub fn app(app_config: &AppConfig) -> Router {
         .layer(tower_governor::GovernorLayer::new(governor_conf))
         .layer(
             TraceLayer::new_for_http()
-            .make_span_with(DefaultMakeSpan::new().include_headers(false))
-            .on_response(DefaultOnResponse::new().level(Level::INFO))
-            .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
+                .make_span_with(DefaultMakeSpan::new().include_headers(false))
+                .on_response(DefaultOnResponse::new().level(Level::INFO))
+                .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
         );
 
     Router::new()
@@ -67,6 +70,8 @@ pub fn app(app_config: &AppConfig) -> Router {
 async fn dashboard(State(state): State<AppState>) -> impl IntoResponse {
     HtmlTemplate(DashboardTemplate {
         state: *state.server_state.lock().unwrap(),
+        uptime: format_uptime(*state.started_at.read().unwrap()),
+        port: state.config.mc_port.clone(),
     })
 }
 
@@ -92,7 +97,8 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
 
     match run_script(script_path.as_path()).await {
         Ok(exit_status) => {
-            let mut guard: std::sync::MutexGuard<'_, ServerState> = state.server_state.lock().unwrap();
+            let mut guard: std::sync::MutexGuard<'_, ServerState> =
+                state.server_state.lock().unwrap();
 
             if exit_status.success() {
                 info!("MC server start command spawned");
@@ -103,9 +109,9 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
                     [(header::CACHE_CONTROL, "no-store")],
                     r#"<div class="success">Message: Server start requested.</div>"#,
                 )
-            }else{
+            } else {
                 error!("Command panicked while running!");
-              
+
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     [(header::CACHE_CONTROL, "no-store")],
@@ -127,13 +133,27 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
 
 async fn status(State(state): State<AppState>) -> impl IntoResponse {
     HtmlTemplate(StatusBoxTemplate {
-        state: *state.server_state.lock().unwrap()
+        state: *state.server_state.lock().unwrap(),
+        uptime: format_uptime(*state.started_at.read().unwrap()),
+        port: state.config.mc_port.clone(),
     })
 }
 
-async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl IntoResponse {
+fn format_uptime(timestamp: Option<Instant>) -> String {
+    match timestamp {
+        Some(value) => {
+            let duration = value.elapsed();
+            let minutes = (duration.as_secs() / 60) % 60;
+            let hours = (duration.as_secs() / 60) / 60;
 
-    if !verify_secret( &data.secret,&state.config.secret_hash) {
+            format!("{hours}h {minutes}min")
+        }
+        None => "-".to_string(),
+    }
+}
+
+async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl IntoResponse {
+    if !verify_secret(&data.secret, &state.config.secret_hash) {
         return (
             StatusCode::FORBIDDEN,
             [(header::CACHE_CONTROL, "no-store")],
@@ -149,14 +169,14 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
             r#"<div class="success">Message: Server is not running.</div>"#,
         );
     }
-    
+
     let script_path: PathBuf = PathBuf::from(&state.config.mc_stop_script);
 
     match run_script(script_path.as_path()).await {
         Ok(_) => {
             info!("MC server stop command spawned");
 
-            let mut guard  = state.server_state.lock().unwrap();
+            let mut guard = state.server_state.lock().unwrap();
             *guard = ServerState::Stopping;
 
             (
@@ -167,7 +187,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
         }
         Err(err) => {
             error!("Failed to execute command: {err}");
-            
+
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 [(header::CACHE_CONTROL, "no-store")],
@@ -183,9 +203,9 @@ fn verify_secret(provided_secret: &str, expected_hash: &str) -> bool {
         Err(err) => {
             error!("Failed to parse secret hash: {err}");
             return false;
-        },
+        }
     };
-    
+
     argon2::Argon2::default()
         .verify_password(provided_secret.as_bytes(), &parsed_hash)
         .is_ok()

@@ -1,13 +1,3 @@
-use crate::app_config::AppConfig;
-use std::sync::{Arc, Mutex};
-
-#[derive(Clone)]
-pub struct AppState {
-   pub config: Arc<AppConfig>,
-   pub server_state: Arc<Mutex<ServerState>>
-}
-
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy,)]
 pub enum ServerState {
    Running, Starting, Offline, Stopping, Error
