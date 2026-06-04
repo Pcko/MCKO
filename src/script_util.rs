@@ -21,8 +21,8 @@ pub async fn run_script(script_path: &Path) -> Result<ExitStatus, std::io::Error
                 cmd
             }
             _ => {
-                let cmd = Command::new(script_path);
-                cmd
+                
+                Command::new(script_path)
             }
         }
     } else {
@@ -33,8 +33,8 @@ pub async fn run_script(script_path: &Path) -> Result<ExitStatus, std::io::Error
                 cmd
             }
             _ => {
-                let cmd = Command::new(script_path);
-                cmd
+                
+                Command::new(script_path)
             }
         }
     };

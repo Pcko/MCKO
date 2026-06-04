@@ -5,7 +5,7 @@ use crate::model::server_state::ServerState;
 use crate::model::template::{DashboardTemplate, HtmlTemplate, StatusBoxTemplate};
 use crate::script_util::run_script;
 use crate::status_monitor::spawn_status_monitor;
-use anyhow::{Context, Error};
+use anyhow::Context;
 use argon2::PasswordVerifier;
 use axum::extract::State;
 use axum::http::{StatusCode, header};
@@ -148,7 +148,7 @@ async fn status(State(state): State<AppState>) -> impl IntoResponse {
         state: *state.server_state.lock().unwrap(),
         uptime: format_uptime(*state.started_at.read().unwrap()),
         port: state.config.mc_port.clone(),
-        player_count: player_count
+        player_count
     })
 }
 
@@ -206,7 +206,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
         );
     }
 
-    let script_path: PathBuf = PathBuf::from(&state.config.mc_stop_script);
+    let _script_path: PathBuf = PathBuf::from(&state.config.mc_stop_script);
     let result = state.rcon_client.stop_server().await;
     // TODO Add option to disable rcon and use script instead if set
 

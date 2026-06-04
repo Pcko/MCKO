@@ -16,6 +16,12 @@ pub struct AppConfig {
     pub rcon_password: String,
 }
 
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppConfig {
     pub fn new() -> Self {
         dotenv().ok();
@@ -30,8 +36,8 @@ impl AppConfig {
             mc_server_jar: dotenv::var("MC_SERVER_JAR").expect("MC_SERVER_JAR must be set"),
             mc_start_script: dotenv::var("MC_START_SCRIPT").expect("MC_START_SCRIPT must be set"),
             mc_stop_script: dotenv::var("MC_STOP_SCRIPT").expect("MC_STOP_SCRIPT must be set"),
-            rcon_host: dotenv::var("RCON_HOST").expect("RCON_HOST must be set"),
-            rcon_port: dotenv::var("RCON_PORT").expect("RCON_PORT must be set"),
+            rcon_host: dotenv::var("RCON_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
+            rcon_port: dotenv::var("RCON_PORT").unwrap_or_else(|_| "25575".to_string()),
             rcon_password: dotenv::var("RCON_PASSWORD").expect("RCON_PASSWORD must be set"),
         }
     }
