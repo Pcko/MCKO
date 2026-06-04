@@ -1,6 +1,8 @@
 pub mod app;
 pub mod app_config;
 pub mod model;
+pub mod process_util;
+pub mod rcon_client;
 pub mod script_util;
 pub mod setup;
 pub mod status_monitor;

@@ -1,8 +1,9 @@
 use crate::app_config::AppConfig;
 use crate::model::app_state::AppState;
-use crate::model::rcon_client::RconClient;
 use crate::model::server_state::ServerState;
 use crate::model::template::{DashboardTemplate, HtmlTemplate, StatusBoxTemplate};
+use crate::process_util::{get_memory_usage, get_tmux_pid};
+use crate::rcon_client::RconClient;
 use crate::script_util::run_script;
 use crate::status_monitor::spawn_status_monitor;
 use anyhow::Context;
@@ -81,7 +82,8 @@ async fn dashboard(State(state): State<AppState>) -> impl IntoResponse {
         state: *state.server_state.lock().unwrap(),
         uptime: format_uptime(*state.started_at.read().unwrap()),
         port: state.config.mc_port.clone(),
-        player_count: "-".to_string()
+        player_count: "-".to_string(),
+        memory_usage: "-".to_string(),
     })
 }
 
@@ -142,13 +144,20 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
 }
 
 async fn status(State(state): State<AppState>) -> impl IntoResponse {
-    let player_count = get_player_count(&state).await.unwrap();
+    let player_count = get_player_count(&state).await.unwrap_or("-".to_string());
+    let uptime = format_uptime(*state.started_at.read().unwrap());
+    let mut memory_usage = "-".to_string();
+
+    if let Ok(pid) = get_tmux_pid(&state.config.mc_tmux_session).await {
+        memory_usage = get_memory_usage(&pid).await.unwrap();
+    }
 
     HtmlTemplate(StatusBoxTemplate {
         state: *state.server_state.lock().unwrap(),
-        uptime: format_uptime(*state.started_at.read().unwrap()),
+        uptime,
         port: state.config.mc_port.clone(),
-        player_count
+        player_count,
+        memory_usage,
     })
 }
 

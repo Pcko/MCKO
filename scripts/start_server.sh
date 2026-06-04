@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-SESSION="${MC_TMUX_SESSION:-minecraft}"
+SESSION="${MC_TMUX_SESSION:-mcko}"
 
 if [ -z "${MC_SERVER_DIR:-}" ]; then
     echo "MC_SERVER_DIR is not set"
@@ -43,6 +43,6 @@ cd "$MC_SERVER_DIR"
 JAVA_ARGS="${MC_JAVA_ARGS:--Xms2G -Xmx6G}"
 
 tmux new-session -d -s "$SESSION" \
-    "java $JAVA_ARGS -jar '$MC_SERVER_JAR' nogui"
+    "exec java $JAVA_ARGS -jar '$MC_SERVER_JAR' nogui"
 
 echo "Minecraft server started in tmux session: $SESSION"

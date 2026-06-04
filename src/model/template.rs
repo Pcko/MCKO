@@ -11,6 +11,7 @@ pub struct DashboardTemplate {
     pub uptime: String,
     pub port: String,
     pub player_count: String,
+    pub memory_usage: String,
 }
 
 #[derive(Template)]
@@ -20,6 +21,7 @@ pub struct StatusBoxTemplate {
     pub uptime: String,
     pub port: String,
     pub player_count: String,
+    pub memory_usage: String,
 }
 
 pub struct HtmlTemplate<T>(pub T);
