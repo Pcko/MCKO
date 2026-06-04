@@ -1,4 +1,5 @@
 use crate::app_config::AppConfig;
+use crate::model::rcon_client::RconClient;
 use crate::model::server_state::ServerState;
 use crate::model::app_state::{AppState};
 use crate::model::template::{DashboardTemplate, HtmlTemplate, StatusBoxTemplate};
@@ -35,6 +36,7 @@ pub fn app(app_config: &AppConfig) -> Router {
         config: Arc::new(app_config.clone()),
         server_state: Arc::new(Mutex::new(ServerState::Offline)),
         started_at: Arc::new(RwLock::new(None)),
+        rcon_client: Arc::new(RconClient::new(&app_config.rcon_host, &app_config.rcon_port, app_config.rcon_password.clone()))
     };
     spawn_status_monitor(app_state.clone());
 
@@ -171,8 +173,10 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
     }
 
     let script_path: PathBuf = PathBuf::from(&state.config.mc_stop_script);
+    let result = state.rcon_client.stop_server().await;
+    // TODO Add option to disable rcon and use script instead if set 
 
-    match run_script(script_path.as_path()).await {
+    match result  {
         Ok(_) => {
             info!("MC server stop command spawned");
 

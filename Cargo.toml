@@ -19,3 +19,6 @@ serde_json = "1.0"
 dotenv = "0.15.0"
 argon2 = { version = "0.5", features = ["std"] }
 tower_governor = "0.8.0"
+rcon = { version = "0.6", features = ["rt-tokio"] }
+anyhow="1"
+which = "7"
