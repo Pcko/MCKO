@@ -1,21 +1,45 @@
-use std::{collections::HashMap, fs, path::Path, process::Command};
+use std::{
+    collections::HashMap,
+    fs,
+    path::Path,
+    process::{Child, Command},
+    time::Duration,
+};
 
 use anyhow::{Context, Result, ensure};
+use tokio::time::sleep;
 
 use crate::app_config::AppConfig;
 
 pub async fn run_setup(config: &AppConfig) -> Result<()> {
     check_server_location(config)?;
+    check_java_install()?;
+
+    let mut server = run_server(config).await?;
+    // Wait a few seconds for the server to generate its files
+    sleep(Duration::from_secs(5)).await;
+    server.kill()?;
+
     accept_eula(config)?;
     configure_server_properties(config)?;
-    check_java_install()?;
 
     Ok(())
 }
 
+pub async fn run_server(config: &AppConfig) -> Result<Child> {
+    let child = Command::new("java")
+        .arg("-jar")
+        .arg(&config.mc_server_jar)
+        .arg("nogui")
+        .current_dir(&config.mc_server_dir)
+        .spawn()?;
+
+    Ok(child)
+}
+
 fn check_server_location(config: &AppConfig) -> Result<()> {
     let dir = Path::new(&config.mc_server_dir);
-    let jar_path = dir.join(dotenv::var("MC_SERVER_JAR").expect("MC_SERVER_JAR must be set"));
+    let jar_path = dir.join(&config.mc_server_jar);
 
     ensure!(
         dir.exists(),
@@ -111,22 +135,17 @@ fn configure_server_properties(config: &AppConfig) -> Result<()> {
     Ok(())
 }
 
-fn check_command_exists(command : &str) -> Result<()> {
-    ensure!(
-        which::which(command).is_ok(),
-        "ERR Java is not installed."
-    );
-    
+fn check_command_exists(command: &str) -> Result<()> {
+    ensure!(which::which(command).is_ok(), "ERR Java is not installed.");
+
     println!("OK {command} found");
     Ok(())
 }
 
-fn check_java_install() -> Result<()>{
+fn check_java_install() -> Result<()> {
     check_command_exists("java")?;
 
-    let output = Command::new("java")
-    .arg("-version")
-    .output()?;
+    let output = Command::new("java").arg("-version").output()?;
 
     let version = String::from_utf8_lossy(&output.stdout);
     println!(" {}", version.trim());

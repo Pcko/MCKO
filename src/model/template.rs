@@ -1,15 +1,16 @@
-use askama::Template; 
+use askama::Template;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 
-use crate::model::server_state::ServerState; 
+use crate::model::server_state::ServerState;
 
-#[derive(Template)] 
-#[template(path = "index.html")] 
+#[derive(Template)]
+#[template(path = "index.html")]
 pub struct DashboardTemplate {
     pub state: ServerState,
     pub uptime: String,
-    pub port: String
+    pub port: String,
+    pub player_count: String,
 }
 
 #[derive(Template)]
@@ -17,22 +18,23 @@ pub struct DashboardTemplate {
 pub struct StatusBoxTemplate {
     pub state: ServerState,
     pub uptime: String,
-    pub port: String
+    pub port: String,
+    pub player_count: String,
 }
 
-pub struct HtmlTemplate<T>(pub T); 
+pub struct HtmlTemplate<T>(pub T);
 
 impl<T> IntoResponse for HtmlTemplate<T>
 where
-    T: Template, 
+    T: Template,
 {
     fn into_response(self) -> Response {
         match self.0.render() {
             // If rendering is successful, return an HTML response
-            Ok(html) => Html(html).into_response(), 
+            Ok(html) => Html(html).into_response(),
             // If rendering fails, return an internal server error
             Err(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR, 
+                StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to render template. Error: {}", err),
             )
                 .into_response(),

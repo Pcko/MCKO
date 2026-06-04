@@ -1,19 +1,22 @@
 use crate::app_config::AppConfig;
+use crate::model::app_state::AppState;
 use crate::model::rcon_client::RconClient;
 use crate::model::server_state::ServerState;
-use crate::model::app_state::{AppState};
 use crate::model::template::{DashboardTemplate, HtmlTemplate, StatusBoxTemplate};
 use crate::script_util::run_script;
 use crate::status_monitor::spawn_status_monitor;
+use anyhow::{Context, Error};
 use argon2::PasswordVerifier;
 use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Form, Router};
+use regex::Regex;
 use serde::Deserialize;
 use std::env;
 use std::path::PathBuf;
+use std::result::Result::Ok;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 use tower_governor::governor::GovernorConfigBuilder;
@@ -36,7 +39,11 @@ pub fn app(app_config: &AppConfig) -> Router {
         config: Arc::new(app_config.clone()),
         server_state: Arc::new(Mutex::new(ServerState::Offline)),
         started_at: Arc::new(RwLock::new(None)),
-        rcon_client: Arc::new(RconClient::new(&app_config.rcon_host, &app_config.rcon_port, app_config.rcon_password.clone()))
+        rcon_client: Arc::new(RconClient::new(
+            &app_config.rcon_host,
+            &app_config.rcon_port,
+            app_config.rcon_password.clone(),
+        )),
     };
     spawn_status_monitor(app_state.clone());
 
@@ -74,6 +81,7 @@ async fn dashboard(State(state): State<AppState>) -> impl IntoResponse {
         state: *state.server_state.lock().unwrap(),
         uptime: format_uptime(*state.started_at.read().unwrap()),
         port: state.config.mc_port.clone(),
+        player_count: "-".to_string()
     })
 }
 
@@ -134,10 +142,13 @@ async fn start(State(state): State<AppState>, Form(data): Form<FormData>) -> imp
 }
 
 async fn status(State(state): State<AppState>) -> impl IntoResponse {
+    let player_count = get_player_count(&state).await.unwrap();
+
     HtmlTemplate(StatusBoxTemplate {
         state: *state.server_state.lock().unwrap(),
         uptime: format_uptime(*state.started_at.read().unwrap()),
         port: state.config.mc_port.clone(),
+        player_count: player_count
     })
 }
 
@@ -152,6 +163,29 @@ fn format_uptime(timestamp: Option<Instant>) -> String {
         }
         None => "-".to_string(),
     }
+}
+
+async fn get_player_count(state: &AppState) -> anyhow::Result<String> {
+    let response = state.rcon_client.list_player().await?;
+
+    let re = Regex::new(r"(?i)there are (\d+) of a max of (\d+) players online(?::\s*(.*))?")?;
+    let caps = re.captures(&response).unwrap();
+
+    // Player Counts
+    let online: u32 = caps
+        .get(1)
+        .context("missing online player count")?
+        .as_str()
+        .parse()?;
+
+    let max: u32 = caps
+        .get(2)
+        .context("missing max player count")?
+        .as_str()
+        .parse()?;
+
+    let count = format!("{online} / {max}");
+    anyhow::Ok(count)
 }
 
 async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl IntoResponse {
@@ -174,9 +208,9 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
 
     let script_path: PathBuf = PathBuf::from(&state.config.mc_stop_script);
     let result = state.rcon_client.stop_server().await;
-    // TODO Add option to disable rcon and use script instead if set 
+    // TODO Add option to disable rcon and use script instead if set
 
-    match result  {
+    match result {
         Ok(_) => {
             info!("MC server stop command spawned");
 
@@ -190,7 +224,7 @@ async fn stop(State(state): State<AppState>, Form(data): Form<FormData>) -> impl
             )
         }
         Err(err) => {
-            error!("Failed to execute command: {err}");
+            error!("Failed to execute command: {err:#}");
 
             (
                 StatusCode::INTERNAL_SERVER_ERROR,

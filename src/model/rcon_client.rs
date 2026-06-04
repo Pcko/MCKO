@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use rcon::{Connection, Error};
+use rcon::Connection;
 
 pub struct RconClient {
     address: String,
