@@ -148,8 +148,11 @@ async fn status(State(state): State<AppState>) -> impl IntoResponse {
     let uptime = format_uptime(*state.started_at.read().unwrap());
     let mut memory_usage = "-".to_string();
 
-    if let Ok(pid) = get_tmux_pid(&state.config.mc_tmux_session).await {
-        memory_usage = get_memory_usage(&pid).await.unwrap();
+    // TODO replace tmux on windows
+    if !cfg!(windows) {
+        if let Ok(pid) = get_tmux_pid(&state.config.mc_tmux_session).await {
+            memory_usage = get_memory_usage(&pid).await.unwrap();
+        }
     }
 
     HtmlTemplate(StatusBoxTemplate {
